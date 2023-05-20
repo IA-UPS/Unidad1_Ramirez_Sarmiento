@@ -1,0 +1,38 @@
+---
+title: "Resumen Redes de Bayes"
+author: "Sarmiento Nimrod, Ramirez Juan"
+format: html
+editor: visual
+---
+
+## Redes Bayesianas
+
+Modelo gráfico probabilístico que representa las relaciones causales entre un conjunto de variables. Está basada en la teoría de la probabilidad bayesiana y utiliza el teorema de Bayes para calcular las probabilidades condicionales entre las variables.
+
+Son utilizadas para modelar y analizar sistemas complejos en los que existe incertidumbre y dependencia entre las variables. Pueden utilizarse en una amplia gama de campos, como la medicina, la ingeniería, la inteligencia artificial y la toma de decisiones.
+
+Una vez construida una red bayesiana, se pueden realizar diversas inferencias probabilísticas, como el cálculo de probabilidades condicionales, la estimación de valores faltantes, la predicción de valores futuros y el diagnóstico de estados ocultos. Estas inferencias se basan en la propagación de probabilidades a través de la red utilizando el teorema de Bayes
+
+## Ventajas
+
+Permiten representar al unísono la dimensión cualitativa y cuantitativa de un problema en un entorno gráfico inteligible.
+
+Pueden trabajar con datos perdidos de una manera eficiente, algo que en la práctica es deseable.
+
+Permiten reducir el sobre ajuste de los datos.
+
+Posibilitan el descubrimiento de la estructura causal subyacente en un conjunto de datos.
+
+Representan toda la información en un único formato (probabilístico y gráfico) lo que hace sencillas las interpretaciones, permite retractarse de conclusiones obtenidas con anterioridad ya que no son razonables a la luz de nuevas evidencias, proporcionan una visión general del problema, generan un conjunto de alternativas ordenadas y facilita la explicación de las conclusiones.
+
+Permiten realizar inferencias bidireccionales; esto es, desde los efectos a las causas y desde las causas a los efectos, etc.
+
+## Aplicación
+
+En la actualidad, las redes bayesianas poseen numerables aplicaciones, sobre todo estas se ponen de manifiesto cuando la cantidad de datos manipulados aumenta a velocidades vertiginosas, haciéndose necesario procesarlos e interpretarlos de forma que sea posible extraer el conocimiento preciso para una adecuada toma de decisiones. A continuación se exponen algunos ejemplos de aplicaciones de las redes bayesianas
+
+## Conclusión
+
+La realización de este trabajo permitió abordar temas referentes a las redes bayesianas y sus aplicaciones en la vida real.
+
+Muchos de los problemas cotidianos pueden ser resueltos con esta técnica de la Inteligencia Artificial por su capacidad de inferir conocimientos sobre otros previamente conocidos, su capacidad de aprendizaje la hacen una técnica muy utilizada a nivel mundial.
