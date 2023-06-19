@@ -1,0 +1,170 @@
+---
+title: 'SVM Unidad #3'
+author: "Ramirez & Sarmiento"
+date: "2023-06-19"
+output:
+  html_document: default
+  pdf_document: default
+params:
+  myfile: darwin.csv
+  folder.data: data
+  p.train: !r 2/3
+  subtitulo: Predicción personas con Alzhaimer/ personas saludables
+  seed.train: 12345
+  seed.clsfier: 1234567
+---
+
+# SVM
+
+Librerias
+
+```{r message=FALSE,warning=FALSE}
+###Cargamos librerias las cuales utilizaremos y poder correr el codigo de manera adecuada
+library(ggplot2) 
+library(kernlab)
+library(caret)
+library(reshape2)
+library(lattice)
+library(ggstatsplot)
+library(dplyr)
+```
+
+\## Step 1: Collect data and trasnform
+
+```{r}
+libraries <- c("reshape2", "ggplot2", "kernlab" ,"caret") ###Instala las librerias
+check.libraries <- is.element(libraries, installed.packages()[, 1])==FALSE ###verifica si las librerías ya están instaladas
+libraries.to.install <- libraries[check.libraries]###crea un vector llamado "libraries.to.install" que contiene sólo las librerías que aún no están instaladas.
+if (length(libraries.to.install!=0)) {
+  install.packages(libraries.to.install)###verifica que todas las librerías se instalen correctamente. 
+}
+
+success <- sapply(libraries,require, quietly = FALSE,  character.only = TRUE)
+if(length(success) != length(libraries)) {stop("A package failed to return a success in require() function.")}###verifica que todas las librerías hayan cargado correctamente. 
+```
+
+```{r}
+datos<-read.csv(file=file.path(params$folder.data,params$myfile),sep = ",")###Esta es una función en R que se utiliza para leer archivos CSV y cargar los datos en un marco de datos
+```
+
+```{r}
+datbox<-datos[,c(1:50)]###crea un nuevo objeto llamado "datbox" que contiene una subselección de columnas del objeto "datos"
+boxplot(datbox,
+        xlab = "Categoría", ylab = "Valor",
+        main = "Diagrama de Cajas",col = "green", border = "purple")###crea un diagrama de cajas (boxplot) utilizando los datos del objeto "datbox". La función
+```
+
+```{r}
+pcx <- prcomp(datbox,scale. = T)###realiza un análisis de componentes principales (PCA, por sus siglas en inglés) en los datos contenidos en el objeto
+plotpca <- bind_cols(pcx$x,activity=datos$air_time1)### Esta línea de código combina las columnas de los resultados del PCA
+ggplot(plotpca,aes(PC2,PC3,color=activity))+geom_point()###crea un gráfico utilizando la librería "ggplot2". Se utiliza el objeto "plotpca" como el conjunto de datos en el gráfico.
+```
+
+```{r message=FALSE,warning=FALSE}
+clases<-as.factor(datos[,ncol(datos)])### crea un nuevo objeto llamado "clases" que contiene la columna final 
+X<-datos[,-ncol(datos)]###crea un nuevo objeto llamado "X" que contiene todas las columnas de "datos" excepto la última columna.
+X.melt<-melt((log2(X)))###ealiza una transformación y reestructuración de los datos en el objeto "X". 
+p <- ggplot(aes(x=value,colour=variable), data=X.melt)###rea un objeto "p" que representa un gráfico base
+p + geom_density(show.legend = F)###agrega una capa al gráfico "p" utilizando la función geom_density(), que genera una estimación de la densidad de los datos
+```
+
+\## Step 2: Split the data in train and test
+
+```{r message=FALSE,warning=FALSE}
+X.log<-log2(X)###calcula el logaritmo en base 2 de los valores en el objeto "X" y los guarda en un nuevo objeto llamado "X.log". La función log2() se aplica a cada valor de "X" de forma individual y devuelve el logaritmo en base 2 correspondiente
+datos.log<-cbind(X,clases)###combina las matrices "X" y "clases" en un nuevo objeto llamado "datos.log"
+class(datos.log)###devuelve la clase o tipo de objeto del objeto "datos.log". 
+```
+
+```{r}
+n<-nrow(datos)###obtener el número de filas en el objeto "datos" y almacenarlo en la variable "n"
+```
+
+```{r}
+# create training and test data
+set.seed(params$seed.train)###establece una semilla para generar números aleatorios.
+
+train <- sample.int(n,floor(n*params$p.train))###crea un vector llamado "train" que contiene una muestra aleatoria de índices de filas de los datos. 
+datos.train <- datos.log[train,]###crea un nuevo objeto llamado "datos.train" que contiene las filas seleccionadas aleatoriamente del objeto "datos.log" para el conjunto de entrenamiento.
+datos.test  <- datos.log[-train,]###crea otro objeto llamado "datos.test" que contiene las filas que no se seleccionaron para el conjunto de entrenamiento.
+```
+
+\## Step 3 - Model Training
+
+```{r}
+clasifier.lineal<-ksvm(clases~ .,data=datos.train,kernel="vanilladot")###entrena un clasificador SVM con un kernel lineal en los datos de entrenamiento.
+clasifier.gauss<-ksvm(clases~.,data=datos.train,kernel = "rbfdot")###entrena otro clasificador SVM, pero esta vez utilizando un kernel gaussiano (RBF) en los datos de entrenamiento. 
+```
+
+```{r}
+clasifier.lineal###contiene el modelo de clasificación SVM resultante.
+```
+
+```{r}
+clasifier.gauss###contiene el modelo de clasificación SVM resultante.
+```
+
+\## Step 4: evaluating model performance
+
+```{r}
+prediction.linear<-predict(clasifier.lineal,datos.test);res.linear<-table(prediction.linear,datos.test$clases)###realiza predicciones utilizando el clasificador SVM entrenado con kernel lineal (almacenado en el objeto "clasifier.lineal") en los datos de prueba ("datos.test")
+prediction.gauss<-predict(clasifier.gauss,datos.test);res.gauss<-table(prediction.gauss,datos.test$clases)###crea una tabla de contingencia entre las predicciones realizadas por el clasificador SVM de kernel lineal y las clases verdaderas en los datos de prueba.
+```
+
+```{r}
+(cmatrix1 <- confusionMatrix(res.linear,positive="P"))###calcula la matriz de confusión utilizando el objeto "res.linear" que contiene las predicciones realizadas por el clasificador SVM de kernel lineal y las clases verdaderas. 
+```
+
+```{r}
+(cmatrix2<-confusionMatrix(res.gauss,positive = "P"))###es similar a la anterior, pero se aplica al objeto "res.gauss" que contiene las predicciones realizadas por el clasificador SVM de kernel gaussiano.
+```
+
+\# Step 5 (opcional) situations:
+
+```{r}
+# modelo 5-crossvalidation 
+model.5v.linear <- train(clases ~ ., datos.train, method='svmLinear', 
+               trControl= trainControl(method='cv', number=5), 
+               tuneGrid= NULL, tuneLength=10 ,trace = FALSE)
+
+# plot(model.5v, alpha=0.6)
+summary(model.5v.linear)
+prediction <- predict(model.5v.linear, datos.test)                           # predict
+res.linear.2<-table(prediction, datos.test$clases)                                  # compare
+
+# predict can also return the probability for each class:
+confusionMatrix(res.linear.2,positive="P")
+```
+
+```{r}
+# modelo 5-crossvalidation 
+model.5v.radial <- train(clases ~ ., datos.train, method='svmRadial', 
+               trControl= trainControl(method='cv', number=5), 
+               tuneGrid= NULL, tuneLength=10 ,trace = FALSE)
+
+# plot(model.5v, alpha=0.6)
+summary(model.5v.radial)
+prediction <- predict(model.5v.radial, datos.test)                           # predict
+res.radial.2<-table(prediction, datos.test$clases)                                  # compare
+
+# predict can also return the probability for each class:
+confusionMatrix(res.radial.2,positive="P")
+```
+
+\### Bootstrap
+
+```{r}
+# Por defecto es Bootstrap, con 25 repeticiones para 3 posibles decay
+# y 3 posibles sizes
+model.bootstrap.linear <- train(clases ~ ., datos.train, method='svmLinear', trace = FALSE) # train
+# we also add parameter 'preProc = c("center", "scale"))' at train() for centering and scaling the data
+
+summary(model.bootstrap.linear)
+prediction <- predict(model.bootstrap.linear, datos.test)                           # predict
+res.gauss.2<-table(prediction, datos.test$clases)                                  # compare
+
+# predict can also return the probability for each class:
+# prediction <- predict(model.bootstrap.linear, datos.test, type="prob")  
+# head(prediction)
+confusionMatrix(res.gauss.2,positive="P")
+```

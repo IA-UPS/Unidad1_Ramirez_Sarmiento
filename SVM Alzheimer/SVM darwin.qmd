@@ -1,0 +1,172 @@
+---
+title: "SVM Unidad 3"
+author: "Ramirez & Sarmiento"
+format: pdf
+editor: visual
+
+params:
+  myfile: "darwin.csv"
+  folder.data: data
+  #p.train: !r 2/3
+  subtitulo: Predicción personas con Alzhaimer/ personas saludables
+  seed.train: 12345
+  seed.clsfier: 1234567
+---
+
+## SVM
+
+Librerias
+
+```{r message=FALSE,warning=FALSE}
+library(ggplot2) 
+library(kernlab)
+library(caret)
+library(reshape2)
+library(lattice)
+library(ggstatsplot)
+library(dplyr)
+```
+
+\## Step 1: Collect data and trasnform
+
+```{r}
+libraries <- c("reshape2", "ggplot2", "kernlab" ,"caret")
+check.libraries <- is.element(libraries, installed.packages()[, 1])==FALSE
+libraries.to.install <- libraries[check.libraries]
+if (length(libraries.to.install!=0)) {
+  install.packages(libraries.to.install)
+}
+
+success <- sapply(libraries,require, quietly = FALSE,  character.only = TRUE)
+if(length(success) != length(libraries)) {stop("A package failed to return a success in require() function.")}
+```
+
+```{r}
+datos<-read.csv(file=file.path(params$folder.data,params$myfile),sep = ",")
+```
+
+```{r}
+datbox<-datos[,c(1:50)]
+boxplot(datbox,
+        xlab = "Categoría", ylab = "Valor",
+        main = "Diagrama de Cajas",col = "green", border = "purple")
+```
+
+```{r}
+pcx <- prcomp(datbox,scale. = T)
+plotpca <- bind_cols(pcx$x,activity=datos$air_time1)
+ggplot(plotpca,aes(PC2,PC3,color=activity))+geom_point()
+```
+
+```{r message=FALSE,warning=FALSE}
+clases<-as.factor(datos[,ncol(datos)])
+X<-datos[,-ncol(datos)]
+X.melt<-melt((log2(X)))
+p <- ggplot(aes(x=value,colour=variable), data=X.melt)
+p + geom_density(show.legend = F)
+```
+
+```{r message=FALSE,warning=FALSE}
+X.log<-log2(X)
+datos.log<-cbind(X,clases)
+class(datos.log)
+```
+
+\## Step 2: Split the data in train and test
+
+```{r}
+n<-nrow(datos)
+```
+
+```{r}
+# create training and test data
+set.seed(params$seed.train)
+
+train <- sample.int(n,floor(n*params$p.train))
+datos.train <- datos.log[train,]
+datos.test  <- datos.log[-train,]
+```
+
+\## Step 3 - Model Training
+
+Usamos un kernel lineal
+
+```{r}
+clasifier.lineal<-ksvm(clases~ .,data=datos.train,kernel="vanilladot")
+clasifier.gauss<-ksvm(clases~.,data=datos.train,kernel = "rbfdot")
+```
+
+```{r}
+clasifier.lineal
+```
+
+```{r}
+clasifier.gauss
+```
+
+\## Step 4: evaluating model performance
+
+```{r}
+prediction.linear<-predict(clasifier.lineal,datos.test);res.linear<-table(prediction.linear,datos.test$clases)
+prediction.gauss<-predict(clasifier.gauss,datos.test);res.gauss<-table(prediction.gauss,datos.test$clases)
+```
+
+```{r}
+(cmatrix1 <- confusionMatrix(res.linear,positive="P"))
+```
+
+```{r}
+(cmatrix2<-confusionMatrix(res.gauss,positive = "P"))
+```
+
+\# Step 5 (opcional) situations:
+
+\### 5-fold crossvalidation
+
+```{r}
+# modelo 5-crossvalidation 
+model.5v.linear <- train(clases ~ ., datos.train, method='svmLinear', 
+               trControl= trainControl(method='cv', number=5), 
+               tuneGrid= NULL, tuneLength=10 ,trace = FALSE)
+
+# plot(model.5v, alpha=0.6)
+summary(model.5v.linear)
+prediction <- predict(model.5v.linear, datos.test)                           # predict
+res.linear.2<-table(prediction, datos.test$clases)                                  # compare
+
+# predict can also return the probability for each class:
+confusionMatrix(res.linear.2,positive="P")
+```
+
+```{r}
+# modelo 5-crossvalidation 
+model.5v.radial <- train(clases ~ ., datos.train, method='svmRadial', 
+               trControl= trainControl(method='cv', number=5), 
+               tuneGrid= NULL, tuneLength=10 ,trace = FALSE)
+
+# plot(model.5v, alpha=0.6)
+summary(model.5v.radial)
+prediction <- predict(model.5v.radial, datos.test)                           # predict
+res.radial.2<-table(prediction, datos.test$clases)                                  # compare
+
+# predict can also return the probability for each class:
+confusionMatrix(res.radial.2,positive="P")
+```
+
+\### Bootstrap
+
+```{r}
+# Por defecto es Bootstrap, con 25 repeticiones para 3 posibles decay
+# y 3 posibles sizes
+model.bootstrap.linear <- train(clases ~ ., datos.train, method='svmLinear', trace = FALSE) # train
+# we also add parameter 'preProc = c("center", "scale"))' at train() for centering and scaling the data
+
+summary(model.bootstrap.linear)
+prediction <- predict(model.bootstrap.linear, datos.test)                           # predict
+res.gauss.2<-table(prediction, datos.test$clases)                                  # compare
+
+# predict can also return the probability for each class:
+# prediction <- predict(model.bootstrap.linear, datos.test, type="prob")  
+# head(prediction)
+confusionMatrix(res.gauss.2,positive="P")
+```
